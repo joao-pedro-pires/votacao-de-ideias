@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Votação de ideias</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Estilo base JUNITEC ---------- */
+  *{box-sizing:border-box}
+  body{margin:0;background:#175FAA;color:#F6F6F6;font-family:'Montserrat',sans-serif;font-weight:400;line-height:1.5}
+  .pagina{max-width:880px;margin:0 auto;padding-block:32px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .sub{margin:0 0 8px;font-size:14px;font-weight:700;color:#175FAA}
+  .votaram{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+  .votaram li{background:#E2EEFF;color:#0944A1;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+  .votaram li b{font-weight:800}
+  .votaram li.atual{background:#74D1EF;color:#0944A1}
+  .votaram li.vazio-lista{background:transparent;color:#3D4F6B;font-weight:400;padding-left:0}
+  .csv-caixa{margin-top:14px;background:#E2EEFF;border-radius:8px;padding:12px;color:#3D4F6B}
+  .csv-caixa textarea{min-height:120px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  .csv-caixa p{margin:0 0 8px;font-size:13px;font-weight:600}
+  .csv-caixa .secundario{margin-top:8px}
+  h1{margin:0;font-weight:700;font-size:32px;color:#F6F6F6}
+  .barra{width:120px;height:6px;background:#74D1EF;border-radius:3px;margin:12px 0 16px}
+  .intro{margin:0 0 24px;color:#E2EEFF;font-size:16px}
+  h2{margin:0 0 12px;font-weight:700;font-size:18px;color:#175FAA}
+
+  /* Cartões */
+  .cartao{background:#F6F6F6;color:#3D4F6B;border-radius:12px;padding:20px;margin-bottom:20px}
+  label{display:block;font-weight:600;font-size:13px;margin:0 0 4px;color:#3D4F6B}
+  input,select,textarea{width:100%;font-family:inherit;font-size:15px;color:#3D4F6B;background:#fff;border:1px solid #C9DAEE;border-radius:8px;padding:10px 12px}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #74D1EF;outline-offset:1px}
+  textarea{resize:vertical;min-height:96px}
+  .linha{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .linha > div{flex:1 1 160px}
+  .ajuda{font-size:13px;color:#3D4F6B;margin:6px 0 0}
+  hr{border:0;border-top:1px solid #C9DAEE;margin:18px 0}
+
+  /* Botões */
+  button{font-family:inherit;font-weight:700;font-size:14px;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;box-shadow:none}
+  .primario{background:#74D1EF;color:#0944A1}
+  .primario:hover{background:#5fc4e6}
+  .secundario{background:transparent;color:#175FAA;border:2px solid #175FAA;padding:8px 14px}
+  .secundario:hover{background:#E2EEFF}
+  .perigo{background:transparent;color:#3D4F6B;border:2px solid #C9DAEE;padding:8px 14px}
+  .perigo:hover{background:#E2EEFF}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Faixa de votos */
+  .votante{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between}
+  .votos-restantes{font-size:14px;color:#3D4F6B}
+  .votos-restantes strong{font-size:28px;color:#175FAA;font-weight:800;margin-right:4px}
+
+  /* Resultado em destaque (sobre azul) */
+  .resultado{margin-bottom:20px}
+  .resultado .rotulo{color:#E2EEFF;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .resultado .ideia-top{color:#74D1EF;font-weight:800;font-size:30px;line-height:1.2;margin:6px 0 4px;overflow-wrap:anywhere}
+  .resultado .detalhe{color:#E2EEFF;font-size:15px}
+  .resultado .acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .resultado .secundario{color:#F6F6F6;border-color:#74D1EF}
+  .resultado .secundario:hover{background:#4D85C2}
+
+  /* Lista de ideias */
+  .cabecalho-lista{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .ideia{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid #C9DAEE}
+  .ideia:first-child{border-top:0}
+  .posicao{flex:0 0 36px;height:36px;border-radius:50%;background:#E2EEFF;color:#175FAA;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ideia.top .posicao{background:#74D1EF;color:#0944A1}
+  .texto{flex:1;min-width:0}
+  .texto .t{font-weight:600;overflow-wrap:anywhere}
+  .etiqueta{display:inline-block;margin-top:4px;font-size:12px;font-weight:600;background:#E2EEFF;color:#0944A1;border-radius:6px;padding:2px 8px}
+  .barra-votos{height:6px;background:#E2EEFF;border-radius:3px;margin-top:8px;overflow:hidden}
+  .barra-votos span{display:block;height:100%;background:#175FAA;border-radius:3px}
+  .controlo{display:flex;align-items:center;gap:8px}
+  .controlo button{width:36px;height:36px;padding:0;font-size:18px}
+  .controlo .menos{background:#E2EEFF;color:#175FAA}
+  .controlo .mais{background:#74D1EF;color:#0944A1}
+  .contagem{min-width:30px;text-align:center;font-weight:800;font-size:20px;color:#175FAA}
+  .remover{background:transparent;color:#3D4F6B;font-size:18px;width:32px;height:32px;padding:0}
+  .remover:hover{background:#E2EEFF}
+  .vazio{color:#3D4F6B;padding:12px 0}
+  .aviso-exemplo{background:#E2EEFF;color:#0944A1;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px;font-weight:600}
+  .nota{font-size:13px;color:#E2EEFF;margin:0 0 8px}
+
+  footer{font-size:12px;color:#E2EEFF;text-align:center;padding:16px 0 4px}
+  #msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#F6F6F6;color:#0944A1;font-weight:700;font-size:14px;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s}
+  #msg.ver{opacity:1}
+
+  /* Telemóvel */
+  @media (max-width:640px){
+    h1{font-size:26px}
+    .resultado .ideia-top{font-size:24px}
+    .ideia{flex-wrap:wrap}
+    .texto{flex:1 1 calc(100% - 60px)}
+    .controlo{margin-left:50px}
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1>Votação de ideias</h1>
+  <div class="barra"></div>
+  <p class="intro">Para consultores da JUNITEC que preparam propostas a PME. Junta as ideias do brainstorm e vota nas melhores.</p>
+
+  <!-- 1. Juntar ideias -->
+  <section class="cartao">
+    <h2>1. Juntar ideias</h2>
+    <label for="colar">Ideias (escreve uma ou cola várias do brainstorm)</label>
+    <textarea id="colar" placeholder="Uma ideia por linha. Ex.: Diagnóstico gratuito de 30 minutos"></textarea>
+    <p class="ajuda">Cada linha vira uma ideia. Traços e números no início são ignorados. Ctrl+Enter também adiciona.</p>
+    <div class="linha" style="margin-top:10px">
+      <div style="flex:0 1 220px">
+        <label for="novaCategoria">Categoria das ideias</label>
+        <select id="novaCategoria">
+          <option>Serviço</option><option>Preço</option><option>Processo</option><option>Comunicação</option><option>Outra</option>
+        </select>
+      </div>
+      <div style="flex:0 0 auto"><button class="primario" id="btnColar">Adicionar ideias</button></div>
+    </div>
+  </section>
+
+  <!-- 2. Votar -->
+  <section class="cartao">
+    <h2>2. Votar</h2>
+    <div class="votante">
+      <div style="flex:1 1 200px">
+        <label for="nomeVotante">Quem está a votar? (nome obrigatório)</label>
+        <input id="nomeVotante" type="text" maxlength="40" placeholder="Nome" required aria-required="true">
+      </div>
+      <div style="flex:0 0 auto">
+        <label for="votosPorPessoa">Votos por pessoa</label>
+        <select id="votosPorPessoa">
+          <option>1</option><option>2</option><option>3</option><option selected>5</option><option>7</option><option>10</option>
+        </select>
+      </div>
+      <div class="votos-restantes"><strong id="restantes">5</strong>votos por usar</div>
+      <button class="primario" id="btnNovaPessoa">Próxima pessoa</button>
+    </div>
+    <p class="ajuda">Escreve o teu nome e distribui os teus votos pelas ideias (podes dar mais do que um à mesma). No fim, carrega em «Próxima pessoa» para registar o teu voto e passar a vez a outro colega.</p>
+    <hr>
+    <h3 class="sub">Já votaram (<span id="nVotaram">0</span>)</h3>
+    <ul class="votaram" id="votaram"></ul>
+  </section>
+
+  <!-- Resultado -->
+  <section class="resultado" aria-live="polite">
+    <div class="rotulo">Ideia mais votada</div>
+    <div class="ideia-top" id="topTexto">—</div>
+    <div class="detalhe" id="topDetalhe"></div>
+    <div class="acoes">
+      <button class="primario" id="btnCopiar">Copiar resultado</button>
+      <button class="secundario" id="btnCsv">Exportar CSV</button>
+    </div>
+    <div class="csv-caixa" id="csvCaixa" hidden>
+      <p>Se o ficheiro não descarregar, copia o texto abaixo para o Excel ou para um ficheiro .csv.</p>
+      <textarea id="csvTexto" readonly aria-label="Texto CSV"></textarea>
+      <button class="secundario" id="btnCopiarCsv">Copiar CSV</button>
+    </div>
+  </section>
+
+  <!-- Ranking -->
+  <section class="cartao">
+    <div class="cabecalho-lista">
+      <h2 style="margin:0">Ranking</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="perigo" id="btnZerar">Zerar votos</button>
+        <button class="perigo" id="btnLimpar">Limpar tudo</button>
+      </div>
+    </div>
+    <div id="avisoExemplo" class="aviso-exemplo" hidden>Estas ideias são só um exemplo. Usa «Limpar tudo» para começar do zero.</div>
+    <div id="lista"></div>
+  </section>
+
+  <p class="nota">Os dados ficam guardados só neste browser (localStorage). Para levar o resultado para outro lado, usa «Copiar resultado» ou «Exportar CSV».</p>
+  <footer>Feito pela JUNITEC</footer>
+</div>
+<div id="msg" role="status"></div>
+
+<script>
+/* ---------- Estado ---------- */
+const CHAVE = 'junitec-votacao-ideias-v1';
+let estado = null;
+
+/* Ideias de exemplo, claramente marcadas como tal */
+function estadoExemplo(){
+  return {
+    exemplo: true,
+    votosPorPessoa: 5,
+    usados: 0,
+    nomeAtual: '',
+    /* Quem já votou: nome e votos usados (exemplo) */
+    votantes: [
+      {nome:'Exemplo: Ana', usados:5},
+      {nome:'Exemplo: Rui', usados:5}
+    ],
+    proximoId: 6,
+    ideias: [
+      {id:1, texto:'Exemplo: diagnóstico inicial gratuito de 30 minutos', categoria:'Serviço', votos:4},
+      {id:2, texto:'Exemplo: proposta em três pacotes (básico, médio, completo)', categoria:'Preço', votos:3},
+      {id:3, texto:'Exemplo: resumo de uma página no topo da proposta', categoria:'Comunicação', votos:2},
+      {id:4, texto:'Exemplo: calendário de entregas com marcos mensais', categoria:'Processo', votos:1},
+      {id:5, texto:'Exemplo: caso prático de uma PME do mesmo setor', categoria:'Comunicação', votos:0}
+    ]
+  };
+}
+
+function carregar(){
+  try{
+    const g = localStorage.getItem(CHAVE);
+    if(g){
+      estado = JSON.parse(g);
+      /* Compatibilidade com dados guardados por versões anteriores */
+      if(!Array.isArray(estado.votantes)) estado.votantes = [];
+      if(typeof estado.nomeAtual !== 'string') estado.nomeAtual = '';
+      return;
+    }
+  }catch(e){}
+  estado = estadoExemplo();
+}
+function guardar(){
+  try{ localStorage.setItem(CHAVE, JSON.stringify(estado)); }catch(e){}
+}
+
+/* ---------- Auxiliares ---------- */
+const $ = id => document.getElementById(id);
+function aviso(texto){
+  const m = $('msg'); m.textContent = texto; m.classList.add('ver');
+  clearTimeout(aviso.t); aviso.t = setTimeout(()=>m.classList.remove('ver'), 1800);
+}
+function escapar(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function restantes(){ return estado.votosPorPessoa - estado.usados; }
+/* Quem já votou, mais a pessoa atual se já gastou algum voto */
+function todosVotantes(){
+  const lista = estado.votantes.map(v => ({nome:v.nome, usados:v.usados, atual:false}));
+  const nome = estado.nomeAtual.trim();
+  if(nome && estado.usados > 0) lista.push({nome, usados:estado.usados, atual:true});
+  return lista;
+}
+function ordenadas(){
+  return [...estado.ideias].sort((a,b)=> b.votos - a.votos || a.id - b.id);
+}
+
+/* Quando o utilizador começa a escrever, deixa de ser exemplo */
+function sairDoExemplo(){
+  if(estado.exemplo){ estado.ideias = []; estado.usados = 0; estado.votantes = []; estado.exemplo = false; estado.proximoId = 1; }
+}
+
+/* ---------- Ações sobre ideias ---------- */
+function adicionarIdeia(texto, categoria){
+  texto = texto.trim();
+  if(!texto) return false;
+  sairDoExemplo();
+  estado.ideias.push({id: estado.proximoId++, texto, categoria, votos:0});
+  return true;
+}
+function votar(id, delta){
+  const ideia = estado.ideias.find(i=>i.id===id);
+  if(!ideia) return;
+  if(!estado.nomeAtual.trim()){ aviso('Escreve primeiro o teu nome.'); $('nomeVotante').focus(); return; }
+  if(delta > 0 && restantes() <= 0){ aviso('Sem votos por usar. Passa à próxima pessoa.'); return; }
+  if(delta < 0 && ideia.votos <= 0) return;
+  if(delta < 0 && estado.usados <= 0){ aviso('Este voto é de outra pessoa.'); return; }
+  ideia.votos += delta;
+  estado.usados += delta;
+  guardar(); desenhar();
+}
+function remover(id){
+  const ideia = estado.ideias.find(i=>i.id===id);
+  if(!ideia) return;
+  /* Devolve à pessoa atual os votos que tinha nesta ideia, até ao limite usado */
+  estado.usados = Math.max(0, estado.usados - ideia.votos);
+  estado.ideias = estado.ideias.filter(i=>i.id!==id);
+  guardar(); desenhar();
+}
+
+/* ---------- Resultado ---------- */
+function textoResultado(){
+  const lista = ordenadas();
+  const total = lista.reduce((s,i)=>s+i.votos,0);
+  let t = 'Votação de ideias (JUNITEC)\n';
+  if(estado.exemplo) t += '[Dados de exemplo]\n';
+  t += 'Total de votos: ' + total + '\n\n';
+  lista.forEach((i,n)=>{ t += (n+1) + '. ' + i.texto + ' [' + i.categoria + '] – ' + i.votos + ' voto(s)\n'; });
+  const quem = todosVotantes();
+  if(quem.length){
+    t += '\nQuem votou (' + quem.length + '): ' + quem.map(v => v.nome + ' (' + v.usados + ')').join(', ') + '\n';
+  }
+  return t;
+}
+function copiar(texto){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(texto);
+  }
+  return new Promise((ok,erro)=>{
+    const ta = document.createElement('textarea');
+    ta.value = texto; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy') ? ok() : erro(); }catch(e){ erro(e); }
+    document.body.removeChild(ta);
+  });
+}
+function exportarCsv(){
+  const aspas = s => '"' + String(s).replace(/"/g,'""') + '"';
+  let csv = 'posicao;ideia;categoria;votos\n';
+  ordenadas().forEach((i,n)=>{ csv += [n+1, aspas(i.texto), aspas(i.categoria), i.votos].join(';') + '\n'; });
+  /* Mostra sempre o texto, para copiar (o descarregamento pode estar bloqueado) */
+  $('csvTexto').value = csv;
+  $('csvCaixa').hidden = false;
+  try{
+    const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'votacao-ideias.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 500);
+  }catch(e){}
+  aviso('CSV pronto');
+}
+
+/* Confirma\u00e7\u00e3o na pr\u00f3pria p\u00e1gina: 1.\u00ba clique pede confirma\u00e7\u00e3o, 2.\u00ba executa */
+function comConfirmacao(botao, textoConfirmar, acao){
+  const original = botao.textContent;
+  botao.addEventListener('click', ()=>{
+    if(botao.dataset.espera === '1'){
+      clearTimeout(botao._t); botao.dataset.espera = ''; botao.textContent = original; acao(); return;
+    }
+    botao.dataset.espera = '1'; botao.textContent = textoConfirmar;
+    botao._t = setTimeout(()=>{ botao.dataset.espera = ''; botao.textContent = original; }, 3000);
+  });
+}
+
+/* ---------- Interface ---------- */
+function desenhar(){
+  $('votosPorPessoa').value = String(estado.votosPorPessoa);
+  $('restantes').textContent = restantes();
+  $('avisoExemplo').hidden = !estado.exemplo;
+
+  const lista = ordenadas();
+  const total = lista.reduce((s,i)=>s+i.votos,0);
+  const maximo = lista.length ? lista[0].votos : 0;
+
+  /* Resultado em destaque */
+  if(total === 0){
+    $('topTexto').textContent = lista.length ? 'Ainda sem votos' : 'Ainda sem ideias';
+    $('topDetalhe').textContent = lista.length ? 'Vota nas ideias para ver o resultado.' : 'Adiciona a primeira ideia acima.';
+  }else{
+    const empatadas = lista.filter(i=>i.votos===maximo);
+    $('topTexto').textContent = empatadas.length > 1 ? empatadas.length + ' ideias empatadas' : lista[0].texto;
+    const nPessoas = todosVotantes().length;
+    $('topDetalhe').textContent = maximo + ' voto(s) de ' + total + ' no total'
+      + (nPessoas ? ' · ' + nPessoas + ' pessoa(s) a votar' : '');
+  }
+
+  /* Quem já votou e quantos votos usou */
+  const quem = todosVotantes();
+  $('nVotaram').textContent = quem.length;
+  $('votaram').innerHTML = quem.length
+    ? quem.map(v => '<li class="'+(v.atual?'atual':'')+'">'+escapar(v.nome)+' · <b>'+v.usados+'</b>/'+estado.votosPorPessoa
+        +' voto(s)'+(v.atual?' · a votar':'')+'</li>').join('')
+    : '<li class="vazio-lista">Ainda ninguém votou.</li>';
+  if($('nomeVotante').value !== estado.nomeAtual) $('nomeVotante').value = estado.nomeAtual;
+  $('btnCopiar').disabled = $('btnCsv').disabled = lista.length === 0;
+
+  /* Lista */
+  if(!lista.length){ $('lista').innerHTML = '<div class="vazio">Ainda não há ideias.</div>'; return; }
+  $('lista').innerHTML = lista.map((i,n)=>{
+    const pct = maximo ? Math.round(i.votos/maximo*100) : 0;
+    const top = total>0 && i.votos===maximo ? ' top' : '';
+    return '<div class="ideia'+top+'">'
+      + '<div class="posicao">'+(n+1)+'</div>'
+      + '<div class="texto"><div class="t">'+escapar(i.texto)+'</div>'
+      + '<span class="etiqueta">'+escapar(i.categoria)+'</span>'
+      + '<div class="barra-votos"><span style="width:'+pct+'%"></span></div></div>'
+      + '<div class="controlo">'
+      + '<button class="menos" data-acao="menos" data-id="'+i.id+'" aria-label="Tirar um voto">−</button>'
+      + '<div class="contagem">'+i.votos+'</div>'
+      + '<button class="mais" data-acao="mais" data-id="'+i.id+'" aria-label="Dar um voto">+</button>'
+      + '<button class="remover" data-acao="remover" data-id="'+i.id+'" aria-label="Remover ideia" title="Remover ideia">×</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+/* ---------- Eventos ---------- */
+$('lista').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  const id = Number(b.dataset.id);
+  if(b.dataset.acao==='mais') votar(id, 1);
+  if(b.dataset.acao==='menos') votar(id, -1);
+  if(b.dataset.acao==='remover') remover(id);
+});
+
+/* Uma só caixa: cada linha é uma ideia (serve para uma ou para várias) */
+function aoAdicionar(){
+  const linhas = $('colar').value.split('\n')
+    .map(l => l.replace(/^\s*(?:[-–•*]|\d+[.)])\s*/, '').trim())
+    .filter(Boolean);
+  if(!linhas.length){ aviso('Escreve ou cola pelo menos uma ideia.'); return; }
+  linhas.forEach(l => adicionarIdeia(l.slice(0,140), $('novaCategoria').value));
+  $('colar').value = ''; $('colar').focus();
+  guardar(); desenhar();
+  aviso(linhas.length === 1 ? '1 ideia adicionada' : linhas.length + ' ideias adicionadas');
+}
+$('btnColar').addEventListener('click', aoAdicionar);
+$('colar').addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); aoAdicionar(); } });
+
+$('votosPorPessoa').addEventListener('change', e=>{
+  estado.votosPorPessoa = Number(e.target.value);
+  if(estado.usados > estado.votosPorPessoa) estado.usados = estado.votosPorPessoa;
+  guardar(); desenhar();
+});
+/* O nome é guardado enquanto se escreve */
+$('nomeVotante').addEventListener('input', e=>{
+  estado.nomeAtual = e.target.value;
+  guardar(); desenhar();
+});
+$('btnNovaPessoa').addEventListener('click', ()=>{
+  const nome = estado.nomeAtual.trim();
+  if(!nome){ aviso('Escreve o nome de quem votou.'); $('nomeVotante').focus(); return; }
+  if(estado.usados === 0){ aviso('Ainda não usaste nenhum voto.'); return; }
+  if(estado.votantes.some(v => v.nome.toLowerCase() === nome.toLowerCase())){
+    aviso('Já existe um voto com este nome. Usa outro nome.'); $('nomeVotante').focus(); return;
+  }
+  estado.votantes.push({nome, usados:estado.usados});
+  estado.usados = 0; estado.nomeAtual = '';
+  guardar(); desenhar();
+  $('nomeVotante').focus();
+  aviso(nome + ' registado. Próxima pessoa!');
+});
+comConfirmacao($('btnZerar'), 'Confirmar: zerar?', ()=>{
+  estado.ideias.forEach(i=>i.votos = 0);
+  estado.usados = 0; estado.votantes = []; estado.nomeAtual = '';
+  guardar(); desenhar();
+});
+comConfirmacao($('btnLimpar'), 'Confirmar: apagar?', ()=>{
+  estado = {exemplo:false, votosPorPessoa: estado.votosPorPessoa, usados:0, nomeAtual:'', votantes:[], proximoId:1, ideias:[]};
+  $('csvCaixa').hidden = true;
+  guardar(); desenhar();
+});
+$('btnCopiarCsv').addEventListener('click', ()=>{
+  const ta = $('csvTexto');
+  copiar(ta.value).then(()=>aviso('CSV copiado'), ()=>{ ta.focus(); ta.select(); aviso('Seleccionado: copia com Ctrl+C'); });
+});
+$('btnCopiar').addEventListener('click', ()=>{
+  copiar(textoResultado()).then(()=>aviso('Resultado copiado'), ()=>aviso('Não foi possível copiar'));
+});
+$('btnCsv').addEventListener('click', exportarCsv);
+
+/* ---------- Arranque ---------- */
+carregar();
+desenhar();
+</script>
+</body>
+</html>
